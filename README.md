@@ -1,22 +1,31 @@
-# Linear Regression: A Case Study on Golf Courses in USA
+# Linear Regression: A Case Study on Health Insurance Costs
 
-This repository contains materials to help you learn linear regression through a case study on golf courses in the United States.
+This repository provides materials to learn linear regression through a case study on health insurance costs. Understand how factors like age, BMI, smoking, and region influence premiums using real-world data. 
+Dataset sourced from [Kaggle](https://www.kaggle.com/datasets/mirichoi0218/insurance).
 
 ## What's Included
-1. **Slides**: A concise explanation of core linear regression concepts.
-2. **R Markdown File (RMD)**: Detailed case study with R code, interpretation, and analysis.
-3. **HTML and PDF Outputs**: Precompiled versions of the RMD for easy viewing.
+
+1. **Slides**: Key linear regression concepts, simplified for quick understanding.  
+2. **R Markdown File (RMD)**: Step-by-step analysis with R code and detailed explanations.  
+3. **HTML Outputs**: Precompiled versions of the RMD for easy reference.
 
 ## How to Use
-1. **Download the Repository**:
-   - Click the green "Code" button and select "Download ZIP."
-   - Extract the ZIP file to access all files.
 
-2. **get Started**:
-   - Open the slides to understand the key concepts. Review at least once before the class.
-   - Explore the RMD or HTML/PDF files for a detailed walkthrough of the analysis. We will cover this step by step in the class.
-  
-![golf](https://github.com/user-attachments/assets/badeb883-dc44-4eee-a687-6cca8f10d8df)
+1. **Download the Repository**:  
+   - Click the green **"Code"** button and select **"Download ZIP"**.  
+   - Extract the ZIP file to access all materials.  
 
+2. **Start Learning**:  
+   - Review the slides to grasp the basics of linear regression.  
+   - Explore the RMD or HTML/PDF files for a detailed walkthrough of the case study.  
 
-Enjoy learning linear regression!
+## About the Case Study
+
+This project analyzes health insurance costs to uncover how demographics and lifestyle choices drive premiums. All elements of the case study are imaginary though the dataset _may be_ real. You'll learn to:  
+- Build and interpret linear regression models.  
+- Diagnose model performance using visualizations.  
+- Apply insights to real-world problems.  
+
+---
+
+Enjoy exploring linear regression and uncovering meaningful insights!
