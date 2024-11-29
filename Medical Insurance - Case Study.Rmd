@@ -1,0 +1,297 @@
+---
+title: "Understanding Health Insurance Premiums with Linear Regression"
+author: "Harshvardhan"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+      theme: flatly
+      toc: yes
+      toc_float:
+         collapsed: true
+---
+
+```{r setup, include=FALSE}
+# clean memory
+rm(list = ls())
+dev.off()
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction: A Strategic Mission for Health Equity in Massachusetts
+
+The Massachusetts Department of Public Health (MDPH) has been grappling with a critical question: How can health insurance premiums be managed more effectively to ensure equity and sustainability in healthcare? Rising healthcare costs, exacerbated by lifestyle-related risk factors and regional disparities, have placed an increasing burden on families and individuals. The state's policymakers recognize that blanket solutions no longer suffice; targeted interventions tailored to the unique needs of communities are essential.
+
+To address this challenge, MDPH has launched an initiative aimed at identifying the most significant drivers of health insurance charges. This study leverages advanced data analytics to examine the interplay between demographic factors (e.g., age, dependents), lifestyle choices (e.g., smoking, BMI), and geographical variations in healthcare usage. The goal is twofold: to inform actionable policies that reduce healthcare disparities and to empower insurers to structure premiums based on evidence rather than assumptions.
+
+The insights from this analysis will form the backbone of Massachusetts' next-generation healthcare strategy, providing policymakers with the data they need to promote preventive care, design incentive-driven health programs, and reallocate resources to regions with the highest need. At its heart, this initiative underscores a commitment to addressing not just the symptoms of rising costs but also their root causes.
+
+**Note:** This is a hypothetical case study with dataset from Kaggle <https://www.kaggle.com/datasets/mirichoi0218/insurance>. All elements are fictional though the dataset *may* be real.
+
+**Github:** You can find this case study as well as the slides on my Github <https://github.com/harshvardhaniimi/linear-regression>.
+
+## Loading Libraries and Data
+
+We need to load the libraries and the dataset to perform our analysis. The dataset is cleaned to ensure variable names are in snake_case for consistency.
+
+```{r}
+library(tidyverse)
+theme_set(theme_minimal())
+
+df = read_csv("insurance.csv") %>%
+  janitor::clean_names()
+df
+```
+
+## Data Exploration
+
+Before we begin doing any data analysis, it is always a good idea to explore what we have here. There are many packages in R that will support this but my personal favourite are `skim()` from `skimr` package for skimming the data frame and then `inspect_num()` (or `inspect_cat()`) with `show_plot()` from `inspectdf` to show histograms or frequency plots.
+
+If you don't have those packages, you will need to install them:
+
+```{r, eval=FALSE}
+install.packages(c("skimr", "inspectdf"))
+```
+
+```{r}
+library(skimr)
+library(inspectdf)
+skim(df)
+inspect_num(df) %>% show_plot()
+```
+
+## Does Smoking Affect Medical Costs?
+
+A key question is whether smoking significantly influences medical costs. To visualize this, we will compare average charges between smokers and non-smokers.
+
+```{r}
+df %>%
+  group_by(smoker) %>%
+  summarise(avg_charges = mean(charges, na.rm = TRUE)) %>%
+  ggplot(aes(x = smoker, y = avg_charges, fill = smoker)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Average Medical Charges: Smokers vs Non-Smokers",
+    x = "Smoking Status",
+    y = "Average Charges ($)"
+  )
+```
+
+The plot shows that smokers have significantly higher medical charges on average compared to non-smokers.
+
+## Scatterplot: BMI and Medical Charges
+
+To investigate the relationship between **BMI (Body Mass Index)** and medical charges, we use a scatterplot.
+
+```{r}
+ggplot(df, aes(x = bmi, y = charges, color = smoker)) +
+  geom_point(alpha = 0.6) +
+  labs(
+    title = "Medical Charges vs BMI",
+    x = "Body Mass Index (BMI)",
+    y = "Medical Charges ($)"
+  )
+```
+
+This scatterplot reveals a positive trend, where higher BMI is generally associated with increased medical charges. The distinction between smokers and non-smokers is also evident, with smokers incurring higher costs across BMI levels.
+
+## Variables in Linear Regression
+
+1.  **Independent Variable**: Predictors used to explain changes in charges. For example:
+    -   **BMI** (health indicator)
+    -   **Age**
+    -   **Smoking status**
+2.  **Dependent Variable**: The outcome variable to predict. Here, it is **charges** (individual medical costs).
+
+### Categorical Variables in Linear Regression
+
+Categorical variables, like **smoker** and **region**, are converted into dummy variables, with one level (e.g., non-smoker or Northeast) as the reference category.
+
+Coefficients show the difference in charges compared to the reference group.
+
+For example in the MLR output below, smokers are predicted to pay \$23,836.30 more than non-smokers, holding other variables constant.
+
+## Key Metrics in Linear Regression
+
+-   P-value: Measures the likelihood that the relationship between a predictor and the outcome occurred by chance. A p-value \< 0.05 suggests a statistically significant relationship.
+-   R-squared ($R^2$): Shows the proportion of variance in the response variable explained by the predictors. Higher values indicate better model fit, but it doesn't account for complexity.
+-   Adjusted $R^2$: Refines $R^2$ by penalizing unnecessary predictors, making it useful for comparing models with different numbers of predictors.
+-   F-statistic: Tests whether the overall model provides meaningful predictions. A small p-value here confirms the model is statistically significant.
+-   Residual Standard Error (RSE): Indicates the typical deviation of observed values from the regression line. Lower values imply better accuracy.
+
+## Simple Linear Regression: BMI and Charges
+
+Let's model the relationship between BMI and charges.
+
+```{r}
+fit = lm(charges ~ bmi, data = df)
+summary(fit)
+```
+
+### Interpretation
+
+BMI is statistically significant (p-value \< 0.05), with charges increasing by \$393.87 for every one-unit increase in BMI. However, BMI alone explains just 3.93% of the variability in charges ($R^2 = 0.03934$), indicating a weak relationship. The model is simplistic, providing limited insight into the broader factors influencing charges.
+
+-   **Intercept (**$\beta_0$): Predicted baseline charges of \$1,192.94 when BMI is 0. While this is unlikely in practice, it serves as a baseline reference.\
+-   **Slope (**$\beta_1$): The estimated increase in charges (\$393.87) per unit increase in BMI quantifies the strength and direction of the relationship.
+
+This output confirms BMI's impact on charges but highlights the need for a more comprehensive model to capture additional influences.
+
+## Multiple Linear Regression: Adding Predictors
+
+To account for additional factors like age and smoking status, we fit a multiple linear regression model.
+
+```{r}
+mlr = lm(charges ~ age + sex + bmi + children + smoker + region, data = df)
+summary(mlr)
+```
+
+### Interpretation
+
+1.  **Significant Predictors**:
+    -   **Smoking**: Smoking has the largest impact, with smokers incurring \$23,836.30 more in charges than non-smokers, holding all else constant.\
+    -   **Age**: Older individuals face higher charges, with an increase of \$256.97 per year of age.\
+    -   **BMI**: Higher BMI is associated with increased charges, rising by \$338.66 per unit.
+2.  **Non-Significant Predictors**:
+    -   **Region**: Minimal impact overall, though small differences are observed (e.g., Southeast and Southwest regions have slightly lower charges compared to the reference region).
+3.  **Model Fit**:
+    -   The model explains 75% of the variation in medical charges ($R^2 = 0.7509$), a substantial improvement over the single-variable model. This indicates the predictors collectively provide a strong explanation for the variability in charges.
+
+By incorporating smoking, age, BMI, and other variables, the model becomes robust and highlights the dominant role of smoking in driving healthcare costs.
+
+### 95% Confidence Intervals
+
+One can estimate 95% confidence intervals using R's `confint()` function. Here is the 95% confidence interval for all estimates. Note that whichever confidence interval includes zero, are the ones that aren't significant.
+
+```{r}
+confint(mlr, level = 0.95)
+```
+
+## Assumptions in Linear Models and Model Diagnostics
+
+Linear regression relies on several assumptions to ensure valid results.
+
+1.  **Linearity** --- assumed linear relationship between $X$ and $Y$
+2.  **Independence** --- residuals (errors) are independent of each other
+3.  **Normal** distribution of residuals $N(0, \sigma^2)$
+4.  **Equal variance** across values of X (homoskedasticity)
+
+To validate assumptions of linear regression, we generate diagnostic plots.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(mlr)
+```
+
+#### **1. Linearity**: Residuals vs. Fitted Plot
+
+-   **Goal**: Residuals should be randomly scattered around the horizontal line at zero, indicating a linear relationship between predictors and the response variable.
+-   **Observation**: In the plot, residuals appear fairly random but show slight curvature for higher fitted values. This suggests some non-linearity in the relationship between predictors (e.g., BMI, age) and charges.
+-   **Action**: Consider testing polynomial terms or interaction effects to capture potential non-linear relationships. (**We will cover transformations and interaction terms in next class!**)
+
+#### **2. Normality**: Normal Q-Q Plot
+
+-   **Goal**: Residuals should follow a straight diagonal line, indicating they are normally distributed.
+-   **Observation**: Most residuals align with the diagonal, but some deviations occur at the tails. These deviations (e.g., points like 13010) suggest the presence of outliers that might slightly violate the normality assumption.
+-   **Action**: Use the Shapiro-Wilk test or check if the sample size (n = 1338) is large enough to rely on the Central Limit Theorem, which reduces the impact of non-normality on inference.
+
+**Shapiro-Wilk Test**:
+
+```{r}
+shapiro.test(resid(mlr))
+```
+
+-   **Interpretation**: If p-value \> 0.05, residuals follow a normal distribution with 95% confidence. Our p-value is very small, indicating that the residuals likely don't follow a random distribution.
+
+#### **3. Homoscedasticity**: Scale-Location Plot
+
+-   **Goal**: Residuals should show constant variance across all fitted values.
+-   **Observation**: The red line in the Scale-Location plot has a slight upward trend, indicating mild heteroscedasticity (non-constant variance). Residuals spread more as fitted values increase, especially for higher charges.
+-   **Action**: Conduct a Breusch-Pagan test to formally assess homoscedasticity.
+
+**Breusch-Pagan Test**:
+
+```{r}
+lmtest::bptest(mlr)
+```
+
+-   **Interpretation**: A p-value \> 0.05 suggests homoscedasticity. If violated, consider transformations like log(charges), weighted regression, interactions or non-linear terms. All of these will be covered in the coming classes.
+
+In our case, we see p-value is very small indicating errors aren't normally distributed.
+
+#### **4. Influential Observations**: Residuals vs. Leverage
+
+-   **Goal**: Identify observations with high leverage (influencing predictions disproportionately).
+-   **Observation**: The plot shows points outside Cook's distance lines (e.g., 13010, 243). These are influential observations that might disproportionately affect the model fit.
+-   **Action**: Investigate these data points. If they are valid outliers, consider robust regression methods or transformations to mitigate their influence.
+
+**Cook's Distance**:
+
+```{r}
+cooks_d <- cooks.distance(mlr) # calculating cook's distance
+par(mfrow=c(1,1)) # resetting single space for plotting
+hist(cooks_d)
+```
+
+-   **Interpretation**: Observations with Cook's distance \> 1 are highly influential or outliers. (Technically speaking, influential points are slightly different meaning from outliers. But for now, we can ignore the nuance.) In our case, there are none.
+
+## Predictions: Estimating Medical Charges
+
+Using the fitted model, we predict charges for individuals and calculate residuals.
+
+```{r}
+df$predicted_charges = predict(mlr, newdata = df)
+df$residuals = df$charges - df$predicted_charges
+
+ggplot(df, aes(x = charges, y = predicted_charges, label = region)) +
+  geom_point(aes(color = residuals, size = abs(residuals)), alpha = 0.3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    title = "Actual vs Predicted Medical Charges",
+    x = "Actual Charges ($)",
+    y = "Predicted Charges ($)"
+  ) +
+  theme(legend.position = "right")
+```
+
+This is a great way to know which data points are we underpredicting or overpredicting.
+
+### Recommendations: A Roadmap for Transforming Healthcare Costs
+
+#### 1. Combat Smoking-Driven Healthcare Costs
+
+Smoking stands out as the single largest factor driving healthcare charges, with smokers incurring over \$23,000 more annually than non-smokers. This finding not only highlights the direct medical costs associated with smoking but also reflects its role as a multiplier of other risks, such as high BMI and chronic illness.
+
+-   **Policy Recommendation**: Expand the Massachusetts Tobacco Cessation and Prevention Program (MTCP) with targeted campaigns for high-risk populations, particularly in regions where smoking prevalence is high. Incorporate financial incentives, such as reduced premiums or tax benefits for non-smokers, into health insurance policies.\
+-   **Community-Level Action**: Partner with employers to implement workplace cessation programs and wellness initiatives, ensuring alignment with the state's broader public health goals.
+
+#### 2. Address High BMI as a Systemic Cost Driver
+
+Body Mass Index (BMI) emerges as another critical predictor of rising charges, compounding the costs associated with smoking and aging. Obesity-related conditions, including cardiovascular disease and diabetes, are contributing to long-term financial strain on the healthcare system.
+
+-   **Policy Recommendation**: Launch statewide wellness initiatives that go beyond traditional health campaigns. Consider subsidizing gym memberships, nutritional counseling, and fitness programs, particularly for lower-income groups that face barriers to access.\
+-   **Community-Level Action**: Leverage schools, community centers, and local healthcare providers to foster early intervention programs for children and young adults to promote healthier lifelong habits.
+
+#### 3. Leverage Geographic Insights for Regional Equity
+
+The analysis reveals subtle but important differences in healthcare charges across regions, with the Southeast and Southwest showing slightly lower premiums compared to the Northeast. While these differences appear minor, they may reflect variations in healthcare access, regional health behaviors, or provider practices.
+
+-   **Policy Recommendation**: Conduct follow-up studies to pinpoint regional disparities in healthcare infrastructure and utilization. Reallocate state funding to underserved areas, ensuring equitable access to preventive care services and chronic disease management programs.\
+-   **Community-Level Action**: Work with local hospitals and clinics to identify the most pressing health challenges in their communities and develop tailored solutions, such as mobile health units or telemedicine services.
+
+#### 4. Incentivize Preventive Healthcare Across Age Groups
+
+With age driving a predictable rise in medical costs, the data underscores the importance of preventive healthcare in mitigating long-term expenses. Early intervention, especially for chronic conditions, can reduce the cumulative burden on both individuals and insurers.
+
+-   **Policy Recommendation**: Encourage insurance providers to design preventive care incentives, such as premium reductions for individuals who undergo annual screenings or meet specific health milestones.\
+-   **Community-Level Action**: Roll out public education campaigns focused on middle-aged populations, emphasizing the financial and health benefits of preventive care.
+
+#### 5. Harness Predictive Analytics for Smarter Policy Design
+
+The multiple linear regression model, which explains 75% of the variability in healthcare charges, serves as a powerful tool for informed decision-making. By quantifying the impact of individual risk factors, the model enables insurers and policymakers to make evidence-based adjustments to premiums and resource allocation.
+
+-   **Policy Recommendation**: Integrate predictive analytics into state planning processes, using the model to anticipate high-cost groups and proactively address their needs.\
+-   **Community-Level Action**: Equip local agencies and health providers with user-friendly versions of the model, empowering them to design targeted interventions for their communities.
+
+### Closing the Loop: From Analysis to Action
+
+Massachusetts' healthcare ecosystem is at a critical inflection point. This study's findings provide a clear blueprint for reducing costs while improving outcomes, but the true test lies in implementation. By taking bold, data-driven actions---ranging from smoking cessation and wellness programs to regional resource allocation---the state can lead the way in building a healthcare system that is not only equitable but also sustainable.
